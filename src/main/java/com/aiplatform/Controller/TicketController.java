@@ -1,11 +1,11 @@
 package com.aiplatform.Controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.aiplatform.model.TicketRequest;
@@ -28,8 +28,19 @@ public class TicketController {
     }
     
     @GetMapping("/ticket")
-    public List<TicketResponse> get() {
-        return ticketService.getAllTickets();
+    public Page<TicketResponse> get(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ticketService.getAllTickets(page, size);
+    }
+    
+    @GetMapping("/tickets/filter")
+    public Page<TicketResponse> getByPriority(
+            @RequestParam String priority,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ticketService.getTicketsByPriority(
+                priority, page, size);
     }
     
     @GetMapping("/ticket/{id}")

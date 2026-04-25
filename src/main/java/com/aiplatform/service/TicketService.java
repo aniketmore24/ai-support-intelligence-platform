@@ -3,8 +3,11 @@ package com.aiplatform.service;
 
 
 import java.time.LocalDateTime;
-import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.aiplatform.aiClient.AIClient;
@@ -69,24 +72,39 @@ public class TicketService {
 
 
 	}
-	
-	
-	
-	public List<TicketResponse> getAllTickets() {
-	    return ticketRepository.findAll()
-	            .stream()
-	            .map(this::mapToResponse)
-	            .toList();
+
+
+
+	@SuppressWarnings("unchecked")
+	public Page<TicketResponse> getAllTickets(
+			int page,
+			int size) {
+
+		Pageable pageable = PageRequest.of(page,  size, Sort.by("createdAt").descending());
+		return ticketRepository.findAll(pageable)
+				.map(this::mapToResponse);
+	}
+
+	public Page<TicketResponse> getTicketsByPriority(
+			String priority,
+			int page,
+			int size) {
+
+		Pageable pageable = PageRequest.of(page, size);
+
+		return ticketRepository
+				.findByPriority(priority, pageable)
+				.map(this::mapToResponse);
 	}
 
 	public TicketResponse getTicketById(Long id) {
-	    Ticket ticket = ticketRepository.findById(id)
-	            .orElseThrow(() -> new RuntimeException("Ticket not found"));
+		Ticket ticket = ticketRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-	    return mapToResponse(ticket);
+		return mapToResponse(ticket);
 	}
-	
-	
+
+
 	private String extractContent(String rawResponse) {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
