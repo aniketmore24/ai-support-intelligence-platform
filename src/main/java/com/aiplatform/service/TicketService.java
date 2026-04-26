@@ -11,6 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.aiplatform.aiClient.AIClient;
+import com.aiplatform.event.TicketCreatedEvent;
 import com.aiplatform.hibernate.Ticket;
 import com.aiplatform.model.TicketResponse;
 import com.aiplatform.repository.TicketRepository;
@@ -25,11 +26,13 @@ public class TicketService {
 	private final AIClient aiClient;
 	private final ObjectMapper objectMapper;
 	private final TicketRepository ticketRepository;
+	private final KafkaProducerService kafkaProducerService;
 
-	public TicketService(AIClient aiClient, ObjectMapper objectMapper, TicketRepository ticketRepository) {
+	public TicketService(AIClient aiClient, ObjectMapper objectMapper, TicketRepository ticketRepository, KafkaProducerService kafkaProducerService) {
 		this.aiClient = aiClient;
 		this.objectMapper = objectMapper;
 		this.ticketRepository = ticketRepository;
+		this.kafkaProducerService = kafkaProducerService;
 	}
 
 	@Transactional
@@ -43,32 +46,18 @@ public class TicketService {
 		ticket.setCreatedAt(LocalDateTime.now());
 
 		ticket = ticketRepository.save(ticket);
+		
+		TicketCreatedEvent event =
+	            new TicketCreatedEvent(
+	                    ticket.getId(),
+	                    ticket.getDescription()
+	            );
 
-		// 2️⃣ Call AI
+	    kafkaProducerService.publishTicketCreated(event);
 
-		String prompt = buildPrompt(description);
+	    return mapToResponse(ticket);
 
-		// call api
-		String rawResponse = aiClient.analyze(prompt);
-		String extractedJson = extractContent(rawResponse);
-
-		TicketResponse aiResponse;
-
-		try {
-			aiResponse = objectMapper.readValue(extractedJson, TicketResponse.class);
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to parse AI response");
-		}
-
-		// Update Ticket
-		ticket.setCategory(aiResponse.getCategory());
-		ticket.setSentiment(aiResponse.getSentiment());
-		ticket.setPriority(aiResponse.getPriority());
-		ticket.setStatus("ANALYZED");
-
-		ticketRepository.save(ticket);
-
-		return mapToResponse(ticket);
+		
 
 
 	}
@@ -104,36 +93,6 @@ public class TicketService {
 		return mapToResponse(ticket);
 	}
 
-
-	private String extractContent(String rawResponse) {
-		try {
-			ObjectMapper mapper = new ObjectMapper();
-			JsonNode root = mapper.readTree(rawResponse);
-			return root.path("choices")
-					.get(0)
-					.path("message")
-					.path("content")
-					.asText();
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to extract AI response");
-		}
-	}
-
-
-	private String buildPrompt(String description) {
-
-		return """
-				Analyze the following support ticket.
-
-				Classify into:
-
-				category: Billing | Internet Connectivity | Technical | Account | General
-				sentiment: Positive | Neutral | Negative
-				priority: Low | Medium | High
-
-				Ticket:
-				""" + description;
-	}
 
 	private TicketResponse mapToResponse(Ticket ticket) {
 		TicketResponse response = new TicketResponse();

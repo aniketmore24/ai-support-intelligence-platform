@@ -48,6 +48,8 @@ public class OpenAIClient implements AIClient {
                 .uri(apiUrl)
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
+                .header("HTTP-Referer", "http://localhost:8080")
+                .header("X-Title", "AI Support Intelligence Platform")
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(String.class)

@@ -33,7 +33,7 @@ public class TicketController {
         return ticketService.getAllTickets(page, size);
     }
     
-    @GetMapping("/tickets/filter")
+    @GetMapping("/ticket/filter")
     public Page<TicketResponse> getByPriority(
             @RequestParam String priority,
             @RequestParam(defaultValue = "0") int page,
