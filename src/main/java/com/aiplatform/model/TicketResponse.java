@@ -3,17 +3,31 @@ package com.aiplatform.model;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Ticket response")
 public class TicketResponse  implements Serializable{
 	
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+		@Schema(example = "1")
 	 	private Long id;
+		
+		@Schema(example = "Internet not working")
 	    private String description;
+	    
+	    @Schema(example = "Internet Connectivity")
 	    private String category;
+	    
+	    @Schema(example = "Negative")
 	    private String sentiment;
+	    
+	    @Schema(example = "High")
 	    private String priority;
+	    
+	    @Schema(example = "Negative")
 	    private String status;
 	    private LocalDateTime createdAt;
 		public Long getId() {
